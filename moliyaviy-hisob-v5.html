@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Ulush Hisob-Kitob Daftari</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#EEF2EC;
+    --line:#D2DCCE;
+    --ink:#232B25;
+    --ink-soft:#5C6B5A;
+    --brass:#A9782F;
+    --brass-dark:#8C6425;
+    --debt:#B03A2E;
+    --debt-bg:#FBEAE6;
+    --profit:#2E7D4F;
+    --reserved:#7B68A6;
+    --reserved-bg:#F3E8FF;
+    --card:#FFFFFF;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    touch-action:manipulation;
+  }
+  .wrap{ max-width:1020px; margin:0 auto; padding:24px 16px 60px; }
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px; margin-bottom:22px; flex-wrap:wrap; gap:12px;
+  }
+  .masthead h1{ font-weight:700; font-size:24px; margin:0; letter-spacing:-0.01em; }
+  .masthead .sub{ font-size:13.5px; color:var(--ink-soft); margin-top:4px; }
+  .datebox{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-soft);
+    text-align:right; border:1px solid var(--line); padding:6px 10px; background:var(--card); border-radius:6px;
+  }
+
+  .hero{ display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:12px; margin-bottom:24px; }
+  @media (max-width:700px){ .hero{ grid-template-columns:1fr 1fr; } }
+  .stat{
+    background:var(--card); border:1px solid var(--line); border-top:3px solid var(--brass);
+    padding:14px 16px; border-radius:8px;
+  }
+  .stat.profit{ border-top-color:var(--profit); }
+  .stat.debt{ border-top-color:var(--debt); }
+  .stat.reserved{ border-top-color:var(--reserved); cursor:pointer; }
+  .stat.reserved:active{ opacity:0.8; }
+  .stat .label{ font-size:12px; font-weight:500; color:var(--ink-soft); margin-bottom:6px; }
+  .stat .value{ font-family:'IBM Plex Mono', monospace; font-size:21px; font-weight:600; }
+  .stat.profit .value{ color:var(--profit); }
+  .stat.debt .value{ color:var(--debt); }
+  .stat.reserved .value{ color:var(--reserved); }
+
+  .layout{ display:grid; grid-template-columns:180px 1fr; gap:18px; }
+  @media (max-width:700px){ .layout{ grid-template-columns:1fr; } }
+  
+  .two-forms{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .two-forms{ grid-template-columns:1fr; } }
+
+  .tabs{ display:flex; flex-direction:row; gap:6px; overflow-x:auto; }
+  @media (min-width:701px){ .tabs{ flex-direction:column; } }
+  .tab{
+    background:var(--card); border:1px solid var(--line); border-left:4px solid var(--brass);
+    padding:10px 12px; cursor:pointer; font-weight:600; font-size:14px;
+    white-space:nowrap; transition:background .15s; border-radius:6px;
+  }
+  .tab:hover{ background:var(--paper); }
+  .tab.active{ background:var(--brass); border-left-color:var(--brass-dark); color:var(--white); }
+  .tab .pct{ display:block; font-family:'IBM Plex Mono', monospace; font-weight:400; font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .tab.active .pct{ color:#f4e8d6; }
+  .tab.all{ border-left-color:var(--ink-soft); font-style:italic; }
+
+  section.card{ background:var(--card); border:1px solid var(--line); padding:14px; margin-bottom:14px; border-radius:8px; }
+  h2{ font-size:15px; font-weight:600; margin:0 0 11px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+
+  form{ display:flex; flex-direction:column; gap:9px; max-width:100%; }
+  label{ font-size:12.5px; color:var(--ink-soft); font-weight:500; margin-bottom:-4px; }
+  input, select{
+    font-family:'Inter', sans-serif; font-size:16px; padding:9px 8px;
+    border:1px solid var(--line); background:var(--white); color:var(--ink); border-radius:6px;
+  }
+  input:focus, select:focus{ outline:2px solid var(--brass); outline-offset:1px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .checkrow{ display:flex; align-items:center; gap:8px; font-size:14px; padding:6px 0; }
+  .checkrow input{ width:18px; height:18px; }
+  .live-share{ font-family:'IBM Plex Mono', monospace; font-size:13.5px; color:var(--profit); min-height:18px; font-weight:600; }
+  button{
+    margin-top:2px; background:var(--ink); color:var(--white); border:none;
+    padding:9px 12px; font-size:14px; font-weight:600; cursor:pointer; border-radius:6px;
+  }
+  button:hover{ background:var(--profit); }
+
+  table{ width:100%; border-collapse:collapse; font-size:14.5px; }
+  thead th{
+    text-align:left; font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--ink-soft); border-bottom:2px solid var(--ink); padding:7px 8px;
+  }
+  tbody td{ padding:11px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tbody td.amt{ color:var(--profit); font-family:'IBM Plex Mono', monospace; font-weight:600; }
+  tbody td.share{ color:var(--ink); font-family:'IBM Plex Mono', monospace; font-weight:700; }
+  tbody tr.nasiya{ background:var(--debt-bg); }
+  tbody tr.nasiya td{ color:var(--debt); }
+  tbody tr.nasiya td.amt, tbody tr.nasiya td.share{ color:var(--debt); }
+  tbody tr.reserved{ background:var(--reserved-bg); }
+  tbody tr.reserved td{ color:var(--reserved); }
+  tbody tr.reserved td.amt, tbody tr.reserved td.share{ color:var(--reserved); }
+  .advertiser{ display:block; font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .nasiya td .advertiser{ color:var(--debt); font-weight:600; }
+  .reserved td .advertiser{ color:var(--reserved); font-weight:600; }
+  .badge{
+    display:inline-block; font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 7px; border-radius:10px; margin-left:6px;
+  }
+  .badge.nasiya{ background:var(--debt); color:white; }
+  .badge.tolandi{ background:var(--ink-soft); color:white; }
+  .badge.reserved{ background:var(--reserved); color:white; }
+  .link-btn{
+    background:none; border:none; color:var(--ink-soft); font-size:12.5px;
+    text-decoration:underline; cursor:pointer; padding:2px 4px; margin:0;
+  }
+  .link-btn:hover{ color:var(--debt); background:none; }
+  .link-btn.pay{ color:var(--profit); }
+  .empty{ color:var(--ink-soft); font-style:italic; font-size:14px; padding:14px 4px; }
+  .hint{ color:var(--ink-soft); font-size:12.5px; margin-top:-6px; margin-bottom:2px; }
+
+  .breakdown{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:6px; }
+  .bd-item{ border:1px solid var(--line); background:var(--white); padding:11px; border-radius:6px; }
+  .bd-item .name{ font-weight:600; font-size:14px; }
+  .bd-item .pct{ font-size:11.5px; color:var(--ink-soft); }
+  .bd-item .num{ font-family:'IBM Plex Mono', monospace; font-size:14px; margin-top:4px; }
+  .bd-item .num.share{ color:var(--profit); font-weight:600; }
+
+  .debtors{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .debtor-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    border:1px solid var(--debt); background:var(--debt-bg); padding:10px 12px; border-radius:6px;
+  }
+  .debtor-row .who{ font-weight:600; color:var(--debt); font-size:14.5px; }
+  .debtor-row .meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .debtor-row .sum{ font-family:'IBM Plex Mono', monospace; font-weight:700; color:var(--debt); font-size:15px; white-space:nowrap; }
+
+  .reserved-items{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .reserved-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    border:1px solid var(--reserved); background:var(--reserved-bg); padding:10px 12px; border-radius:6px;
+  }
+  .reserved-item .who{ font-weight:600; color:var(--reserved); font-size:14.5px; }
+  .reserved-item .meta{ font-size:12px; color:var(--ink-soft); margin-top:2px; }
+  .reserved-item .sum{ font-family:'IBM Plex Mono', monospace; font-weight:700; color:var(--reserved); font-size:15px; white-space:nowrap; }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(35,43,37,0.55);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:1000;
+  }
+  @media (min-width:701px){ .modal-overlay{ align-items:center; padding:20px; } }
+  .modal-box{
+    background:var(--paper); width:100%; max-width:640px; max-height:86vh;
+    border-radius:16px 16px 0 0; overflow-y:auto;
+    box-shadow:0 -6px 28px rgba(0,0,0,.25);
+  }
+  @media (min-width:701px){ .modal-box{ border-radius:12px; max-height:80vh; } }
+  .modal-header{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:16px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--paper); z-index:1;
+  }
+  .modal-header h2{ font-size:16px; margin:0; padding:0; border:none; }
+  .modal-body-inner{ padding:16px; }
+  .modal-close{
+    background:var(--card); color:var(--ink-soft); border:1px solid var(--line);
+    width:30px; height:30px; padding:0; border-radius:50%; font-size:15px; line-height:1;
+    display:flex; align-items:center; justify-content:center; margin:0; flex-shrink:0;
+  }
+  .modal-close:hover{ background:var(--debt); color:white; border-color:var(--debt); }
+
+  .res-detail-row{
+    background:var(--card); border:1px solid var(--line); border-left:4px solid var(--reserved);
+    border-radius:8px; padding:12px; margin-bottom:8px;
+  }
+  .res-detail-top{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .res-detail-source{ font-weight:600; font-size:14.5px; }
+  .res-detail-who{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
+  .res-detail-date{ font-size:11.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; margin-top:3px; }
+  .res-detail-amt{ font-family:'IBM Plex Mono', monospace; font-weight:700; color:var(--reserved); font-size:16px; white-space:nowrap; }
+  .res-detail-actions{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
+  .res-detail-note{ font-size:12.5px; color:var(--ink-soft); font-style:italic; margin-top:7px; line-height:1.4; }
+
+  .res-edit-form{ display:flex; flex-direction:column; gap:8px; }
+  .res-edit-form label{ font-size:11.5px; }
+  .res-edit-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .res-edit-actions{ display:flex; gap:8px; margin-top:2px; }
+  .res-edit-actions button{ flex:1; margin-top:0; padding:9px; font-size:13.5px; }
+  .btn-cancel{ background:var(--ink-soft) !important; }
+
+  .toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+  .export{ background:none; color:var(--profit); border:1px solid var(--profit); padding:6px 11px; font-size:12.5px; margin:0; border-radius:6px; }
+  .export:hover{ background:var(--profit); color:white; }
+  .loading{ color:var(--ink-soft); font-style:italic; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>Ulush Hisob-Kitob Daftari</h1>
+      <div class="sub">5 loyihadan tushgan pul va mening ulushim</div>
+    </div>
+    <div class="datebox" id="todayBox"></div>
+  </div>
+
+  <div class="hero" id="heroStats"></div>
+
+  <div class="modal-overlay" id="reservedModalOverlay" style="display:none;" onclick="if(event.target===this) closeReservedModal();">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Bron qilingan reklamalar — batafsil</h2>
+        <button class="modal-close" onclick="closeReservedModal()">✕</button>
+      </div>
+      <div class="modal-body-inner" id="reservedModalBody"></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="tabs" id="tabs"></div>
+
+    <div>
+      <div class="two-forms">
+        <section class="card">
+          <h2>Tushum yozish</h2>
+          <form id="incomeForm">
+            <label>Loyiha</label>
+            <select id="incSource" required></select>
+            <div class="row2">
+              <div>
+                <label>Sana</label>
+                <input type="date" id="incDate" required>
+              </div>
+              <div>
+                <label>Summa (so'm)</label>
+                <input type="number" id="incAmount" min="0" step="1" placeholder="0" required inputmode="numeric">
+              </div>
+            </div>
+            <label>Reklamani kim berdi</label>
+            <input type="text" id="incAdvertiser" placeholder="Ism familiya (ixtiyoriy)">
+            <div class="live-share" id="liveShare"></div>
+            <div class="checkrow">
+              <input type="checkbox" id="incNasiya">
+              <label style="margin:0; font-weight:400;" for="incNasiya">Nasiya (pul hali qo'lga tegmagan, qarz)</label>
+            </div>
+            <button type="submit">+ Tushumni qo'shish</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Oldindan bron qilgan reklama</h2>
+          <form id="reservedForm">
+            <label>Loyiha</label>
+            <select id="resSource" required></select>
+            <div class="row2">
+              <div>
+                <label>Sana</label>
+                <input type="date" id="resDate" required>
+              </div>
+              <div>
+                <label>Summa (so'm)</label>
+                <input type="number" id="resAmount" min="0" step="1" placeholder="0" required inputmode="numeric">
+              </div>
+            </div>
+            <label>Reklamani kim berdi</label>
+            <input type="text" id="resAdvertiser" placeholder="Ism familiya (ixtiyoriy)">
+            <label>Izoh</label>
+            <input type="text" id="resNote" placeholder="Qo'shimcha izoh (ixtiyoriy)">
+            <div class="live-share" id="liveShareRes"></div>
+            <button type="submit">+ Bron qilgan reklama qo'shish</button>
+          </form>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Exceldan ma'lumot yuklash</h2>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div style="flex:1; min-width:200px;">
+            <label>Excel faylni tanlang (.xlsx)</label>
+            <input type="file" id="excelFile" accept=".xlsx,.xls" style="padding:8px;">
+          </div>
+          <button id="importBtn" style="margin-top:0;">📥 Yuklash</button>
+        </div>
+        <div id="importStatus" style="margin-top:12px; font-size:13px; color:var(--ink-soft);"></div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <h2 style="border:none; margin:0; padding:0;" id="tableTitle">Barcha yozuvlar</h2>
+          <div style="display:flex; gap:8px;">
+            <button class="export" id="exportBtn">Excelga yuklab olish</button>
+          </div>
+        </div>
+        <div class="hint" id="tableHint">Oxirgi 30 kun + barcha to'lanmagan nasiyalar ko'rsatilmoqda.</div>
+        <div id="tableWrap"><div class="loading">Yuklanmoqda...</div></div>
+      </section>
+
+      <section class="card" id="debtorsCard" style="display:none;">
+        <h2>Qarzdorlar (jami nasiya)</h2>
+        <div class="debtors" id="debtors"></div>
+      </section>
+
+      <section class="card">
+        <h2>Loyihalar bo'yicha taqsimot <span style="font-weight:400; color:var(--ink-soft); font-size:13px;">(oxirgi 30 kun)</span></h2>
+        <div class="breakdown" id="breakdown"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const SOURCES = [
+  { name: "CODERS", pct: 20 },
+  { name: "JAVOHIR", pct: 50 },
+  { name: "BOTS MANAGER", pct: 30.76 },
+  { name: "RAHIMOV", pct: 16.66 },
+  { name: "DONIK", pct: 40 },
+];
+
+const STORAGE_KEY = "ledger-income-v4";
+let data = { income: [], reserved: [] };
+let activeFilter = "ALL";
+
+function fmt(n){
+  return Math.round(n).toLocaleString("uz-UZ").replace(/,/g, " ") + " so'm";
+}
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysAgo(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const diff = (now - d) / (1000*60*60*24);
+  return diff;
+}
+function within30(dateStr){
+  const diff = daysAgo(dateStr);
+  return diff >= 0 && diff <= 30;
+}
+
+// Initialize date fields
+function initializeDates(){
+  document.getElementById("incDate").value = todayStr();
+  document.getElementById("resDate").value = todayStr();
+}
+
+document.getElementById("todayBox").textContent = new Date().toLocaleDateString("uz-UZ", {year:"numeric", month:"long", day:"numeric"});
+
+function populateSourceSelect(){
+  const sel1 = document.getElementById("incSource");
+  const sel2 = document.getElementById("resSource");
+  const html = SOURCES.map(s => `<option value="${s.name}">${s.name} — ulushim ${s.pct}%</option>`).join("");
+  sel1.innerHTML = html;
+  sel2.innerHTML = html;
+  sel1.value = SOURCES[0].name;
+  sel2.value = SOURCES[0].name;
+}
+
+function populateTabs(){
+  const tabs = document.getElementById("tabs");
+  let html = `<div class="tab all ${activeFilter==='ALL'?'active':''}" data-src="ALL">Barchasi</div>`;
+  html += SOURCES.map(s => `
+    <div class="tab ${activeFilter===s.name?'active':''}" data-src="${s.name}">
+      ${s.name}
+      <span class="pct">Ulushim: ${s.pct}%</span>
+    </div>`).join("");
+  tabs.innerHTML = html;
+  tabs.querySelectorAll(".tab").forEach(el=>{
+    el.addEventListener("click", ()=>{ activeFilter = el.dataset.src; render(); });
+  });
+}
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      data.income = parsed.income || [];
+      data.reserved = parsed.reserved || [];
+    } else {
+      // Eski v3 dan migrate qilish
+      const old3 = localStorage.getItem("ledger-income-v3");
+      if(old3){
+        try{
+          const parsed = JSON.parse(old3);
+          data.income = (parsed.income || []).map(x => ({advertiser: x.advertiser || "", ...x}));
+          data.reserved = [];
+          await saveData();
+          console.log("V3 dan migrasyon tugallandi");
+        } catch(e2){
+          console.log("V3 migration xatosi:", e2);
+        }
+      } else {
+        // V2 dan migrate qilish
+        const old2 = localStorage.getItem("ledger-income-v2");
+        if(old2){
+          try{
+            const parsed = JSON.parse(old2);
+            data.income = (parsed.income || []).map(x => ({advertiser:"", ...x}));
+            data.reserved = [];
+            await saveData();
+            console.log("V2 dan migrasyon tugallandi");
+          } catch(e2){
+            console.log("V2 migration xatosi:", e2);
+          }
+        }
+      }
+    }
+  }catch(e){
+    console.log("Hozircha saqlangan ma'lumot yo'q, yangidan boshlanmoqda.", e);
+    data = { income: [], reserved: [] };
+  }
+  populateSourceSelect();
+  populateTabs();
+  initializeDates();
+  render();
+}
+
+async function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){
+    console.error("Storage xatosi:", e);
+    alert("Ma'lumotni saqlashda xatolik yuz berdi. Qaytadan urinib ko'ring.");
+  }
+}
+
+function updateLiveShare(){
+  const srcName = document.getElementById("incSource").value;
+  const amount = parseFloat(document.getElementById("incAmount").value) || 0;
+  const src = SOURCES.find(s=>s.name===srcName);
+  if(!src) return;
+  const share = amount * (src.pct/100);
+  document.getElementById("liveShare").textContent = amount>0
+    ? `Sizning ulushingiz: ${fmt(share)} (${src.pct}%)`
+    : "";
+}
+
+function updateLiveShareRes(){
+  const srcName = document.getElementById("resSource").value;
+  const amount = parseFloat(document.getElementById("resAmount").value) || 0;
+  const src = SOURCES.find(s=>s.name===srcName);
+  if(!src) return;
+  const share = amount * (src.pct/100);
+  document.getElementById("liveShareRes").textContent = amount>0
+    ? `Sizning ulushingiz: ${fmt(share)} (${src.pct}%)`
+    : "";
+}
+
+// Income form handler
+document.addEventListener("DOMContentLoaded", function(){
+  const incomeForm = document.getElementById("incomeForm");
+  if(incomeForm){
+    incomeForm.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const srcName = document.getElementById("incSource").value;
+      const src = SOURCES.find(s=>s.name===srcName);
+      if(!src) { alert("Loyiha tanlanmagan"); return; }
+      const amount = parseFloat(document.getElementById("incAmount").value);
+      const date = document.getElementById("incDate").value;
+      const advertiser = document.getElementById("incAdvertiser").value.trim();
+      const nasiya = document.getElementById("incNasiya").checked;
+      if(!amount || amount<=0) { alert("Summa kiritilmagan"); return; }
+      data.income.push({
+        id: uid(),
+        source: src.name,
+        pct: src.pct,
+        amount,
+        share: amount * (src.pct/100),
+        date,
+        advertiser,
+        nasiya,
+        paid: false
+      });
+      await saveData();
+      document.getElementById("incAmount").value = "";
+      document.getElementById("incAdvertiser").value = "";
+      document.getElementById("incNasiya").checked = false;
+      document.getElementById("liveShare").textContent = "";
+      render();
+    });
+  }
+
+  // Reserved form handler
+  const reservedForm = document.getElementById("reservedForm");
+  if(reservedForm){
+    reservedForm.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const srcName = document.getElementById("resSource").value;
+      const src = SOURCES.find(s=>s.name===srcName);
+      if(!src) { alert("Loyiha tanlanmagan"); return; }
+      const amount = parseFloat(document.getElementById("resAmount").value);
+      const date = document.getElementById("resDate").value;
+      const advertiser = document.getElementById("resAdvertiser").value.trim();
+      const note = document.getElementById("resNote").value.trim();
+      if(!amount || amount<=0) { alert("Summa kiritilmagan"); return; }
+      data.reserved.push({
+        id: uid(),
+        source: src.name,
+        pct: src.pct,
+        amount,
+        share: amount * (src.pct/100),
+        date,
+        advertiser,
+        note,
+        confirmed: false
+      });
+      await saveData();
+      document.getElementById("resAmount").value = "";
+      document.getElementById("resAdvertiser").value = "";
+      document.getElementById("resNote").value = "";
+      document.getElementById("liveShareRes").textContent = "";
+      render();
+    });
+  }
+
+  // Event listeners for live share
+  const incSource = document.getElementById("incSource");
+  const incAmount = document.getElementById("incAmount");
+  const resSource = document.getElementById("resSource");
+  const resAmount = document.getElementById("resAmount");
+  
+  if(incSource) incSource.addEventListener("change", updateLiveShare);
+  if(incAmount) incAmount.addEventListener("input", updateLiveShare);
+  if(resSource) resSource.addEventListener("change", updateLiveShareRes);
+  if(resAmount) resAmount.addEventListener("input", updateLiveShareRes);
+});
+
+async function markPaid(id){
+  const item = data.income.find(x=>x.id===id);
+  if(item){ item.paid = true; await saveData(); render(); }
+}
+async function deleteIncome(id){
+  data.income = data.income.filter(x=>x.id!==id);
+  await saveData(); render();
+}
+
+
+document.addEventListener("DOMContentLoaded", function(){
+  const exportBtn = document.getElementById("exportBtn");
+  if(exportBtn){
+    exportBtn.addEventListener("click", ()=>{
+      if(!data.income || data.income.length===0){
+        alert("Eksport qilish uchun hali yozuv yo'q.");
+        return;
+      }
+      const rows = [...data.income].sort((a,b)=> (a.date<b.date?-1:1));
+
+      const sheetData = [
+        ["Sana", "Loyiha", "Kim berdi", "Ulush foizi (%)", "Tushgan summa (so'm)", "Mening ulushim (so'm)", "Holati"]
+      ];
+      rows.forEach(r=>{
+        let holati = "Naqd";
+        if(r.nasiya) holati = r.paid ? "Nasiya edi — to'landi" : "Nasiya — hali to'lanmagan";
+        sheetData.push([r.date, r.source, r.advertiser || "", r.pct, r.amount, Math.round(r.share), holati]);
+      });
+
+      const totalIncome = rows.reduce((a,b)=>a+b.amount,0);
+      const paidShare = rows.filter(i=>!i.nasiya || i.paid).reduce((a,b)=>a+b.share,0);
+      const debtTotal = rows.filter(i=>i.nasiya && !i.paid).reduce((a,b)=>a+b.amount,0);
+
+      sheetData.push([]);
+      sheetData.push(["", "", "", "", "JAMI TUSHUM (hammasi):", Math.round(totalIncome), ""]);
+      sheetData.push(["", "", "", "", "QO'LIMDAGI ULUSHIM (NAQD, hammasi):", Math.round(paidShare), ""]);
+      sheetData.push(["", "", "", "", "NASIYADAGI QARZ (TO'LIQ SUMMA):", Math.round(debtTotal), ""]);
+
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      ws['!cols'] = [{wch:12},{wch:16},{wch:18},{wch:12},{wch:18},{wch:18},{wch:26}];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Hisob-kitob");
+
+      const fname = `hisob-kitob-${todayStr()}.xlsx`;
+      XLSX.writeFile(wb, fname);
+    });
+  }
+});
+
+function render(){
+  populateTabs();
+  renderStats();
+  renderTable();
+  renderDebtors();
+  renderBreakdown();
+  const modalOverlay = document.getElementById("reservedModalOverlay");
+  if(modalOverlay && modalOverlay.style.display === "flex"){
+    renderReservedModal();
+  }
+}
+
+function renderStats(){
+  const scoped = activeFilter==="ALL" ? data.income : data.income.filter(i=>i.source===activeFilter);
+  const recent = scoped.filter(i => within30(i.date));
+
+  const totalIncome30 = recent.reduce((a,b)=>a+b.amount,0);
+  const paidShare30 = recent.filter(i=>!i.nasiya || i.paid).reduce((a,b)=>a+b.share,0);
+  const debtTotalAll = scoped.filter(i=>i.nasiya && !i.paid).reduce((a,b)=>a+b.amount,0);
+  
+  const reservedScoped = activeFilter==="ALL" ? data.reserved : data.reserved.filter(i=>i.source===activeFilter);
+  const reservedTotal = reservedScoped.reduce((a,b)=>a+b.amount,0);
+
+  const hero = document.getElementById("heroStats");
+  hero.innerHTML = `
+    <div class="stat profit">
+      <div class="label">Qo'limdagi ulushim (naqd, 30 kun)${activeFilter!=="ALL" ? " — "+activeFilter : ""}</div>
+      <div class="value">${fmt(paidShare30)}</div>
+    </div>
+    <div class="stat">
+      <div class="label">Jami tushum (30 kun)</div>
+      <div class="value">${fmt(totalIncome30)}</div>
+    </div>
+    <div class="stat reserved" onclick="openReservedModal()">
+      <div class="label">Bron qilgan reklamalar (jami) <span style="font-weight:400;">— ko'rish ›</span></div>
+      <div class="value">${fmt(reservedTotal)}</div>
+    </div>
+    <div class="stat debt">
+      <div class="label">Nasiyadagi qarz (jami, hammasi)</div>
+      <div class="value">${fmt(debtTotalAll)}</div>
+    </div>
+  `;
+}
+
+function renderTable(){
+  const title = document.getElementById("tableTitle");
+  title.textContent = activeFilter==="ALL" ? "Barcha yozuvlar" : `${activeFilter} — yozuvlar`;
+
+  let rows = data.income.filter(i => activeFilter==="ALL" || i.source===activeFilter);
+  rows = rows.filter(i => within30(i.date) || (i.nasiya && !i.paid));
+  rows = [...rows].sort((a,b)=> (a.date<b.date?1:-1));
+
+  const wrap = document.getElementById("tableWrap");
+  if(rows.length===0){
+    wrap.innerHTML = `<div class="empty">Oxirgi 30 kunda yozuv yo'q. Yuqoridagi shakldan bugungi tushumni qo'shing.</div>`;
+    return;
+  }
+
+  let html = `<table><thead><tr>
+    <th>Sana</th><th>Loyiha / Kim berdi</th><th>Tushgan summa</th><th>Mening ulushim</th><th></th>
+  </tr></thead><tbody>`;
+
+  rows.forEach(r=>{
+    const isDebt = r.nasiya && !r.paid;
+    html += `<tr class="${isDebt?'nasiya':''}">
+      <td>${r.date}</td>
+      <td>${r.source}
+        ${r.nasiya ? (r.paid ? `<span class="badge tolandi">To'landi</span>` : `<span class="badge nasiya">Nasiya</span>`) : ""}
+        ${r.advertiser ? `<span class="advertiser">${r.advertiser}</span>` : ""}
+      </td>
+      <td class="amt">${fmt(r.amount)}</td>
+      <td class="share">${fmt(r.share)} <span style="color:var(--ink-soft); font-weight:400;">(${r.pct}%)</span></td>
+      <td>
+        ${isDebt ? `<button class="link-btn pay" onclick="markPaid('${r.id}')">to'landi deb belgilash</button>` : ""}
+        <button class="link-btn" onclick="deleteIncome('${r.id}')">o'chirish</button>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+}
+
+function renderDebtors(){
+  const card = document.getElementById("debtorsCard");
+  const scoped = activeFilter==="ALL" ? data.income : data.income.filter(i=>i.source===activeFilter);
+  const unpaid = scoped.filter(i=>i.nasiya && !i.paid);
+
+  if(unpaid.length===0){
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "block";
+
+  const groups = {};
+  unpaid.forEach(r=>{
+    const key = (r.advertiser && r.advertiser.trim()) ? r.advertiser.trim() : `(${r.source} — ism kiritilmagan)`;
+    if(!groups[key]) groups[key] = { total:0, count:0, sources:new Set() };
+    groups[key].total += r.amount;
+    groups[key].count += 1;
+    groups[key].sources.add(r.source);
+  });
+
+  const entries = Object.entries(groups).sort((a,b)=> b[1].total - a[1].total);
+
+  document.getElementById("debtors").innerHTML = entries.map(([name, g])=>`
+    <div class="debtor-row">
+      <div>
+        <div class="who">${name}</div>
+        <div class="meta">${[...g.sources].join(", ")} · ${g.count} ta yozuv</div>
+      </div>
+      <div class="sum">${fmt(g.total)}</div>
+    </div>
+  `).join("");
+}
+
+let editingReservedId = null;
+
+function openReservedModal(){
+  editingReservedId = null;
+  document.getElementById("reservedModalOverlay").style.display = "flex";
+  document.body.style.overflow = "hidden";
+  renderReservedModal();
+}
+function closeReservedModal(){
+  document.getElementById("reservedModalOverlay").style.display = "none";
+  document.body.style.overflow = "";
+  editingReservedId = null;
+}
+
+function renderReservedModal(){
+  const body = document.getElementById("reservedModalBody");
+  if(!body) return;
+  const scoped = activeFilter==="ALL" ? data.reserved : data.reserved.filter(i=>i.source===activeFilter);
+  const items = [...scoped].sort((a,b)=> (a.date<b.date?1:-1));
+
+  if(items.length===0){
+    body.innerHTML = `<div class="empty">Hali bron qilingan reklama yo'q.</div>`;
+    return;
+  }
+
+  body.innerHTML = items.map(r=>{
+    if(editingReservedId === r.id) return renderReservedEditForm(r);
+    return `
+      <div class="res-detail-row">
+        <div class="res-detail-top">
+          <div>
+            <div class="res-detail-source">${r.source} <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(${r.pct}%)</span></div>
+            ${r.advertiser ? `<div class="res-detail-who">${r.advertiser}</div>` : ""}
+            <div class="res-detail-date">${r.date}</div>
+          </div>
+          <div class="res-detail-amt">${fmt(r.amount)}</div>
+        </div>
+        ${r.note ? `<div class="res-detail-note">${r.note}</div>` : ""}
+        <div class="res-detail-actions">
+          <button class="link-btn pay" onclick="markReservedAsPosted('${r.id}')">Reklama qo'yildi</button>
+          <button class="link-btn" onclick="startEditReserved('${r.id}')">tahrirlash</button>
+          <button class="link-btn" onclick="deleteReservedFromModal('${r.id}')">o'chirish</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderReservedEditForm(r){
+  const options = SOURCES.map(s=>`<option value="${s.name}" ${s.name===r.source?'selected':''}>${s.name} — ${s.pct}%</option>`).join("");
+  const safeAdvertiser = (r.advertiser||'').replace(/"/g,'&quot;');
+  const safeNote = (r.note||'').replace(/"/g,'&quot;');
+  return `
+    <div class="res-detail-row">
+      <div class="res-edit-form">
+        <label>Loyiha</label>
+        <select id="editSrc_${r.id}">${options}</select>
+        <div class="res-edit-row">
+          <div>
+            <label>Sana</label>
+            <input type="date" id="editDate_${r.id}" value="${r.date}">
+          </div>
+          <div>
+            <label>Summa (so'm)</label>
+            <input type="number" id="editAmount_${r.id}" value="${r.amount}" min="0" step="1" inputmode="numeric">
+          </div>
+        </div>
+        <label>Reklamani kim berdi</label>
+        <input type="text" id="editAdvertiser_${r.id}" value="${safeAdvertiser}" placeholder="Ism familiya (ixtiyoriy)">
+        <label>Izoh</label>
+        <input type="text" id="editNote_${r.id}" value="${safeNote}" placeholder="Qo'shimcha izoh (ixtiyoriy)">
+        <div class="res-edit-actions">
+          <button onclick="saveEditReserved('${r.id}')">Saqlash</button>
+          <button class="btn-cancel" onclick="cancelEditReserved()">Bekor qilish</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function startEditReserved(id){
+  editingReservedId = id;
+  renderReservedModal();
+}
+function cancelEditReserved(){
+  editingReservedId = null;
+  renderReservedModal();
+}
+async function saveEditReserved(id){
+  const item = data.reserved.find(x=>x.id===id);
+  if(!item) return;
+  const srcName = document.getElementById(`editSrc_${id}`).value;
+  const src = SOURCES.find(s=>s.name===srcName);
+  const date = document.getElementById(`editDate_${id}`).value;
+  const amount = parseFloat(document.getElementById(`editAmount_${id}`).value);
+  const advertiser = document.getElementById(`editAdvertiser_${id}`).value.trim();
+  const note = document.getElementById(`editNote_${id}`).value.trim();
+
+  if(!src) return;
+  if(!amount || amount<=0){ alert("Summa noto'g'ri kiritildi"); return; }
+  if(!date){ alert("Sana kiritilmagan"); return; }
+
+  item.source = src.name;
+  item.pct = src.pct;
+  item.date = date;
+  item.amount = amount;
+  item.share = amount * (src.pct/100);
+  item.advertiser = advertiser;
+  item.note = note;
+
+  await saveData();
+  editingReservedId = null;
+  renderReservedModal();
+  renderStats();
+}
+async function deleteReservedFromModal(id){
+  data.reserved = data.reserved.filter(x=>x.id!==id);
+  await saveData();
+  renderReservedModal();
+  renderStats();
+}
+async function markReservedAsPosted(id){
+  const item = data.reserved.find(x=>x.id===id);
+  if(!item) return;
+
+  data.income.push({
+    id: uid(),
+    source: item.source,
+    pct: item.pct,
+    amount: item.amount,
+    share: item.amount * (item.pct/100),
+    date: todayStr(),
+    advertiser: item.advertiser || "",
+    note: item.note || "",
+    nasiya: false,
+    paid: false
+  });
+
+  data.reserved = data.reserved.filter(x=>x.id!==id);
+
+  await saveData();
+  render();
+}
+
+function renderBreakdown(){
+  const bd = document.getElementById("breakdown");
+  bd.innerHTML = SOURCES.map(s=>{
+    const items = data.income.filter(i=>i.source===s.name && within30(i.date));
+    const total = items.reduce((a,b)=>a+b.amount,0);
+    const share = items.reduce((a,b)=>a+b.share,0);
+    return `<div class="bd-item">
+      <div class="name">${s.name}</div>
+      <div class="pct">Ulushim: ${s.pct}%</div>
+      <div class="num">Jami tushum: ${fmt(total)}</div>
+      <div class="num share">Mening ulushim: ${fmt(share)}</div>
+    </div>`;
+  }).join("");
+}
+
+// Excel import handler
+document.addEventListener("DOMContentLoaded", function(){
+  const importBtn = document.getElementById("importBtn");
+  const excelFile = document.getElementById("excelFile");
+  const importStatus = document.getElementById("importStatus");
+  
+  if(importBtn && excelFile){
+    importBtn.addEventListener("click", async () => {
+      const file = excelFile.files[0];
+      if(!file){
+        importStatus.textContent = "❌ Fayl tanlanmagan";
+        importStatus.style.color = "var(--debt)";
+        return;
+      }
+      
+      try{
+        importStatus.textContent = "⏳ Yuklanmoqda...";
+        importStatus.style.color = "var(--ink-soft)";
+        
+        const data_bytes = await file.arrayBuffer();
+        const workbook = XLSX.read(data_bytes, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        
+        if(!rows || rows.length === 0){
+          importStatus.textContent = "❌ Excel faylda ma'lumot topilmadi";
+          importStatus.style.color = "var(--debt)";
+          return;
+        }
+        
+        let addedCount = 0;
+        
+        rows.forEach((row, idx) => {
+          try{
+            // Kolona nomlarini tekshirish
+            const date = row["Sana"] || row["sana"] || row["Date"];
+            const source = row["Loyiha"] || row["loyiha"] || row["Project"];
+            const amount = parseFloat(row["Tushgan summa"] || row["tushgan summa"] || row["Amount"] || 0);
+            const pctStr = row["Ulush foizi (%)"] || row["ulush foizi"] || row["%"];
+            const advertiser = row["Kim berdi"] || row["kim berdi"] || row["Advertiser"] || "";
+            const holati = row["Holati"] || row["holati"] || row["Status"] || "";
+            
+            // Validatsiya
+            if(!date || !source || !amount || amount <= 0){
+              return; // Skip invalid rows
+            }
+            
+            const pct = parseFloat(pctStr) || 0;
+            const nasiya = holati.toLowerCase().includes("nasiya");
+            const paid = holati.toLowerCase().includes("to'landi") || holati.toLowerCase().includes("tolandi");
+            
+            data.income.push({
+              id: uid(),
+              source: source.trim(),
+              pct: pct,
+              amount: amount,
+              share: amount * (pct / 100),
+              date: date,
+              advertiser: advertiser.trim(),
+              nasiya: nasiya,
+              paid: paid
+            });
+            
+            addedCount++;
+          } catch(e){
+            console.log("Row " + (idx + 1) + " o'tkazib yuborildi:", e);
+          }
+        });
+        
+        if(addedCount > 0){
+          await saveData();
+          importStatus.textContent = `✅ ${addedCount} ta yozuv yuklandi`;
+          importStatus.style.color = "var(--profit)";
+          excelFile.value = "";
+          setTimeout(() => {
+            render();
+          }, 300);
+        } else {
+          importStatus.textContent = "⚠️ Hech qanday to'g'ri ma'lumot topilmadi";
+          importStatus.style.color = "var(--brass)";
+        }
+      } catch(e){
+        console.error("Import xatosi:", e);
+        importStatus.textContent = "❌ Fayl o'qishda xatolik: " + e.message;
+        importStatus.style.color = "var(--debt)";
+      }
+    });
+  }
+});
+
+// Load data on page load
+window.addEventListener("load", loadData);
+</script>
+</body>
+</html>
